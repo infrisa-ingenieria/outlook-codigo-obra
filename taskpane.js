@@ -32,12 +32,52 @@ function leerLista(clave) {
 
 function porCodigo(c) { return obras.find(function (o) { return o.codigo === c; }); }
 
+// Solo se aceptan enlaces https (los datos vienen de fuera: nada de javascript: ni similares).
+function enlaceSeguro(u) { return /^https:\/\//i.test(u || "") ? u : ""; }
+
+function enlacesHtml(o) {
+  var sp = enlaceSeguro(o.url_sharepoint), fo = enlaceSeguro(o.url_forma);
+  var h = "";
+  if (sp) h += '<a href="' + esc(sp) + '" target="_blank" rel="noopener" title="Abrir la carpeta de la obra en SharePoint">SP</a>';
+  if (fo) h += '<a href="' + esc(fo) + '" target="_blank" rel="noopener" title="Abrir la obra en Autodesk Forma">Forma</a>';
+  return h ? '<span class="enlaces">' + h + "</span>" : "";
+}
+
 function filaHtml(o) {
   var fav = favoritas.indexOf(o.codigo) >= 0;
   return '<div class="fila" data-codigo="' + esc(o.codigo) + '">' +
     '<button class="estrella" title="Favorita" data-fav="' + esc(o.codigo) + '">' + (fav ? "★" : "☆") + "</button>" +
     '<span class="codigo">' + codigoHtml(o.codigo) + "</span>" +
-    '<span class="nombre" title="' + esc(o.nombre) + '">' + esc(o.nombre) + "</span></div>";
+    '<span class="nombre" title="' + esc(o.nombre) + '">' + esc(o.nombre) + "</span>" +
+    enlacesHtml(o) + "</div>";
+}
+
+// Código que ya lleva el asunto (tras RE:/FW:), p. ej. «0905-29_PCI»; "" si no lleva.
+function codigoDelAsunto(asunto) {
+  var m = (asunto || "").match(/^\s*(?:(?:re|rv|res|fw|fwd|enc)\s*:\s*)*(\d{4}-\d{2,3}(?:[_-][A-Za-z]+)?)(?=\s|$|[-–—|:])/i);
+  return m ? m[1] : "";
+}
+
+// Franja superior: qué código lleva ahora el correo (útil al responder/reenviar) y enlaces a su carpeta.
+function mostrarActual(asunto) {
+  var caja = document.getElementById("actual");
+  var cod = codigoDelAsunto(asunto);
+  if (!cod) { caja.innerHTML = ""; return; }
+  var o = porCodigo(cod);
+  if (!o) {
+    caja.innerHTML = "Este correo ya lleva <b>" + esc(cod) + '</b><span class="nota">Ese código no está en la lista de obras: compruébalo.</span>';
+    return;
+  }
+  caja.innerHTML = "Este correo ya es de <b>" + esc(o.codigo) + "</b> · " + esc(o.nombre) + " " + enlacesHtml(o) +
+    '<span class="nota">Elige otra obra abajo solo si quieres cambiarlo.</span>';
+}
+
+function refrescarActual() {
+  try {
+    Office.context.mailbox.item.subject.getAsync(function (r) {
+      mostrarActual(r.status === Office.AsyncResultStatus.Succeeded ? r.value : "");
+    });
+  } catch (e) { mostrarActual(""); }
 }
 
 function seccion(titulo, lista) {
@@ -81,6 +121,7 @@ function ponerEnAsunto(codigo) {
         recientes = [codigo].concat(recientes.filter(function (c) { return c !== codigo; })).slice(0, MAX_RECIENTES);
         guardar();
         estado("Asunto: " + nuevo);
+        mostrarActual(nuevo);
         pintar();
       } else {
         estado("No se pudo cambiar el asunto.");
@@ -108,6 +149,7 @@ Office.onReady(function () {
   recientes = leerLista("recientes");
 
   document.getElementById("listas").addEventListener("click", function (e) {
+    if (e.target.closest("a")) return;   // enlaces SP / Forma: se abren, no cambian el asunto
     var fav = e.target.closest("[data-fav]");
     if (fav) { e.stopPropagation(); alternarFavorita(fav.getAttribute("data-fav")); return; }
     var fila = e.target.closest(".fila");
@@ -115,5 +157,5 @@ Office.onReady(function () {
   });
   document.getElementById("buscar").addEventListener("input", pintar);
 
-  cargarObras().then(pintar).catch(function () { estado("No se pudo cargar la lista de obras."); });
+  cargarObras().then(function () { pintar(); refrescarActual(); }).catch(function () { estado("No se pudo cargar la lista de obras."); });
 });
