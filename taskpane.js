@@ -59,7 +59,7 @@ function filaHtml(o) {
 
 // Código que ya lleva el asunto (tras RE:/FW:), p. ej. «0905-29_PCI»; "" si no lleva.
 // Prefijos que se respetan: RE:/RV:/FW:… y etiquetas como [EXTERNO].
-var PREFIJOS = "(?:(?:\\[[^\\]]{1,30}\\]|(?:re|rv|res|fw|fwd|enc)\\s*:)\\s*)*";
+var PREFIJOS = "(?:(?:\\[[^\\]]{1,30}\\]|(?:re|rv|res|fw|fwd|enc|tr)\\s*:)\\s*)*";
 var CONFIDENCIAL = "C9999";
 
 function codigoDelAsunto(asunto) {
@@ -70,13 +70,14 @@ function codigoDelAsunto(asunto) {
 // Si el asunto empieza por algo que parece un código mal escrito (599-111, 0559.111, 0559 111…),
 // devuelve las obras de la lista a las que podría referirse (solo si existen: nunca se inventa).
 function candidatasCorreccion(asunto) {
-  var m = (asunto || "").match(new RegExp("^\\s*" + PREFIJOS + "(\\d{1,4})\\s*[-._ ]\\s*(\\d{1,3})(?:_([A-Za-z]+))?(?=\\s|$|[-–—|:])", "i"));
+  var m = (asunto || "").match(new RegExp("^\\s*" + PREFIJOS + "(?:(\\d{1,4})\\s*[-._ ]\\s*(\\d{1,3})|(\\d{4})(\\d{2,3}))(?:_([A-Za-z]+))?(?=\\s|$|[-–—|:])", "i"));
   if (!m) return [];
-  var cli = ("0000" + m[1]).slice(-4), num = m[2].length === 1 ? "0" + m[2] : m[2];
+  var a = m[1] || m[3], b = m[2] || m[4];   // cliente y número de obra (con o sin separador: 559-107 · 0559107)
+  var cli = ("0000" + a).slice(-4), num = b.length === 1 ? "0" + b : b;
   var base = cli + "-" + num;
   var cand = obras.filter(function (o) {
     var c = o.codigo.toUpperCase();
-    return m[3] ? c === base + "_" + m[3].toUpperCase() : c === base;
+    return m[5] ? c === base + "_" + m[5].toUpperCase() : c === base;
   });
   return cand.length ? cand : [];
 }
@@ -156,7 +157,7 @@ function ponerEnAsunto(codigo, malEscrito) {
     var resto = m ? m[2] : actual;
     // quita el código anterior (si se corrige uno mal escrito, también el formato suelto: 599-111, 0559.111…)
     resto = resto.replace(malEscrito
-      ? /^(?:\d{1,4}\s*[-._ ]\s*\d{1,3}(?:_[A-Za-z]+)?|C9999)\s*[-–—|:]?\s*/i
+      ? /^(?:\d{1,4}\s*[-._ ]\s*\d{1,3}(?:_[A-Za-z]+)?|\d{6,7}(?:_[A-Za-z]+)?|C9999)\s*[-–—|:]?\s*/i
       : /^(?:\d{4}-\d{2,3}(?:[_-][A-Za-z]+)?|C9999)\s*[-–—|:]?\s*/i, "");
     var nuevo = prefijo + codigo + (resto ? " – " + resto : " – ");
     item.subject.setAsync(nuevo, function (res) {
