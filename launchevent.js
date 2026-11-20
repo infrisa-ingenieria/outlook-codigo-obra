@@ -4,8 +4,13 @@
 // Código al principio del asunto, tras los prefijos de respuesta/reenvío: 0905-19 · 0905-29_PCI · 0157-123
 var REGEX_CODIGO = /^\s*((re|rv|res|fw|fwd|enc)\s*:\s*)*\d{4}-\d{2,3}([_-][A-Za-z]+)?(\s|$|[-–—|:])/i;
 
-var MENSAJE_FALTA = "Este correo no lleva código de obra en el asunto (formato: 0000-00 – texto). " +
-  "Pulsa «Obra» en la cinta para elegirlo, o «Enviar de todos modos» si no corresponde a ninguna obra.";
+var MENSAJE_FALTA = "Este correo no lleva código de obra en el asunto. " +
+  "Pulsa «Elegir obra» para abrir la lista, o «Enviar de todos modos» si no corresponde a ninguna obra.";
+
+// Botón propio del aviso: cancela el envío y abre el panel «Obra» (el Control btnObra del manifiesto).
+function avisoFalta() {
+  return { allowEvent: false, errorMessage: MENSAJE_FALTA, cancelLabel: "Elegir obra", commandId: "btnObra" };
+}
 
 function onMessageSendHandler(event) {
   var terminado = false;
@@ -15,7 +20,7 @@ function onMessageSendHandler(event) {
     event.completed(resultado);
   }
   // Si leer el asunto tarda o falla, no se deja a Outlook esperando: se avisa igualmente.
-  var reloj = setTimeout(function () { terminar({ allowEvent: false, errorMessage: MENSAJE_FALTA }); }, 4000);
+  var reloj = setTimeout(function () { terminar(avisoFalta()); }, 4000);
   try {
     Office.context.mailbox.item.subject.getAsync(function (resultado) {
       clearTimeout(reloj);
@@ -24,11 +29,11 @@ function onMessageSendHandler(event) {
         return;
       }
       var asunto = resultado.value || "";
-      terminar(REGEX_CODIGO.test(asunto) ? { allowEvent: true } : { allowEvent: false, errorMessage: MENSAJE_FALTA });
+      terminar(REGEX_CODIGO.test(asunto) ? { allowEvent: true } : avisoFalta());
     });
   } catch (e) {
     clearTimeout(reloj);
-    terminar({ allowEvent: false, errorMessage: MENSAJE_FALTA });
+    terminar(avisoFalta());
   }
 }
 
