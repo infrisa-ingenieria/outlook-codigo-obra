@@ -1,0 +1,66 @@
+[
+ {
+  "codigo": "9001-01",
+  "nombre": "Cliente Demo A · Nave logística"
+ },
+ {
+  "codigo": "9001-02",
+  "nombre": "Cliente Demo A · Ampliación cámara"
+ },
+ {
+  "codigo": "9001-02_PCI",
+  "nombre": "Cliente Demo A · Ampliación cámara"
+ },
+ {
+  "codigo": "9001-02_Dep",
+  "nombre": "Cliente Demo A · Ampliación cámara"
+ },
+ {
+  "codigo": "9001-03",
+  "nombre": "Cliente Demo A · Reforma muelles"
+ },
+ {
+  "codigo": "9002-10",
+  "nombre": "Cliente Demo B · Almacén frigorífico"
+ },
+ {
+  "codigo": "9002-11",
+  "nombre": "Cliente Demo B · Sala de envasado"
+ },
+ {
+  "codigo": "9002-11_Serv",
+  "nombre": "Cliente Demo B · Zona de servicios"
+ },
+ {
+  "codigo": "9003-05",
+  "nombre": "Cliente Demo C · Planta de congelados"
+ },
+ {
+  "codigo": "9003-06",
+  "nombre": "Cliente Demo C · Cubierta y fachada"
+ },
+ {
+  "codigo": "9004-21",
+  "nombre": "Cliente Demo D · Instalación frigorífica"
+ },
+ {
+  "codigo": "9004-22",
+  "nombre": "Cliente Demo D · Obra civil"
+ },
+ {
+  "codigo": "9005-08",
+  "nombre": "Cliente Demo E · Centro de distribución"
+ },
+ {
+  "codigo": "9005-09",
+  "nombre": "Cliente Demo E · Muelles de carga"
+ },
+ {
+  "codigo": "9006-01",
+  "nombre": "Cliente Demo F · Ingeniería"
+ },
+ {
+  "codigo": "9006-02",
+  "nombre": "Cliente Demo F · Proyecto básico"
+ }
+]

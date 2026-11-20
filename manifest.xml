@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- Complemento de Outlook «Código de obra» (prototipo v0). Manifiesto «add-in only»: es el que funciona en Windows (clásico y nuevo), web y Mac.
+     La URL base (BASE) debe coincidir con donde se publiquen los ficheros (GitHub Pages: solo código, ningún dato). -->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
+           xsi:type="MailApp">
+  <Id>3febaa5c-9e13-4800-b5eb-b55ed0ce1ae8</Id>
+  <Version>0.1.0.0</Version>
+  <ProviderName>INFRISA</ProviderName>
+  <DefaultLocale>es-ES</DefaultLocale>
+  <DisplayName DefaultValue="Código de obra"/>
+  <Description DefaultValue="Pone el código de obra en el asunto del correo y avisa al enviar si falta."/>
+  <IconUrl DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/icon-128.png"/>
+  <SupportUrl DefaultValue="https://www.infrisa.com"/>
+  <AppDomains>
+    <AppDomain>https://infrisa-ingenieria.github.io</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Mailbox"/>
+  </Hosts>
+  <Requirements>
+    <Sets>
+      <Set Name="Mailbox" MinVersion="1.12"/>
+    </Sets>
+  </Requirements>
+  <FormSettings>
+    <Form xsi:type="ItemEdit">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/taskpane.html"/>
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+  <Permissions>ReadWriteItem</Permissions>
+  <Rule xsi:type="RuleCollection" Mode="Or">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Edit"/>
+  </Rule>
+  <DisableEntityHighlighting>false</DisableEntityHighlighting>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides/1.1" xsi:type="VersionOverridesV1_1">
+      <Requirements>
+        <bt:Sets DefaultMinVersion="1.12">
+          <bt:Set Name="Mailbox"/>
+        </bt:Sets>
+      </Requirements>
+      <Hosts>
+        <Host xsi:type="MailHost">
+          <Runtimes>
+            <Runtime resid="WebViewRuntime.Url">
+              <Override type="javascript" resid="JSRuntime.Url"/>
+            </Runtime>
+          </Runtimes>
+          <DesktopFormFactor>
+            <FunctionFile resid="Commands.Url"/>
+
+            <!-- Aviso al enviar: «PromptUser» = avisa y deja elegir «Enviar de todos modos» -->
+            <ExtensionPoint xsi:type="LaunchEvent">
+              <LaunchEvents>
+                <LaunchEvent Type="OnMessageSend" FunctionName="onMessageSendHandler" SendMode="PromptUser"/>
+              </LaunchEvents>
+              <SourceLocation resid="WebViewRuntime.Url"/>
+            </ExtensionPoint>
+
+            <!-- Botón «Obra» en la cinta del mensaje nuevo: abre el panel lateral -->
+            <ExtensionPoint xsi:type="MessageComposeCommandSurface">
+              <OfficeTab id="TabDefault">
+                <Group id="grupoObra">
+                  <Label resid="GrupoLabel"/>
+                  <Control xsi:type="Button" id="btnObra">
+                    <Label resid="BotonLabel"/>
+                    <Supertip>
+                      <Title resid="BotonLabel"/>
+                      <Description resid="BotonDescripcion"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="Icon.16"/>
+                      <bt:Image size="32" resid="Icon.32"/>
+                      <bt:Image size="80" resid="Icon.80"/>
+                    </Icon>
+                    <Action xsi:type="ShowTaskpane">
+                      <SourceLocation resid="Taskpane.Url"/>
+                    </Action>
+                  </Control>
+                </Group>
+              </OfficeTab>
+            </ExtensionPoint>
+          </DesktopFormFactor>
+        </Host>
+      </Hosts>
+      <Resources>
+        <bt:Images>
+          <bt:Image id="Icon.16" DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/icon-16.png"/>
+          <bt:Image id="Icon.32" DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/icon-32.png"/>
+          <bt:Image id="Icon.80" DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/icon-80.png"/>
+        </bt:Images>
+        <bt:Urls>
+          <bt:Url id="Taskpane.Url" DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/taskpane.html"/>
+          <bt:Url id="Commands.Url" DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/commands.html"/>
+          <bt:Url id="WebViewRuntime.Url" DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/commands.html"/>
+          <bt:Url id="JSRuntime.Url" DefaultValue="https://infrisa-ingenieria.github.io/outlook-codigo-obra/launchevent.js"/>
+        </bt:Urls>
+        <bt:ShortStrings>
+          <bt:String id="GrupoLabel" DefaultValue="INFRISA"/>
+          <bt:String id="BotonLabel" DefaultValue="Obra"/>
+        </bt:ShortStrings>
+        <bt:LongStrings>
+          <bt:String id="BotonDescripcion" DefaultValue="Elige la obra (favoritas, últimas o búsqueda) y pone su código en el asunto."/>
+        </bt:LongStrings>
+      </Resources>
+    </VersionOverrides>
+  </VersionOverrides>
+</OfficeApp>
