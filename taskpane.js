@@ -58,16 +58,46 @@ function filaHtml(o) {
 }
 
 // Código que ya lleva el asunto (tras RE:/FW:), p. ej. «0905-29_PCI»; "" si no lleva.
+// Prefijos que se respetan: RE:/RV:/FW:… y etiquetas como [EXTERNO].
+var PREFIJOS = "(?:(?:\\[[^\\]]{1,30}\\]|(?:re|rv|res|fw|fwd|enc)\\s*:)\\s*)*";
+var CONFIDENCIAL = "C9999";
+
 function codigoDelAsunto(asunto) {
-  var m = (asunto || "").match(/^\s*(?:(?:re|rv|res|fw|fwd|enc)\s*:\s*)*(\d{4}-\d{2,3}(?:[_-][A-Za-z]+)?)(?=\s|$|[-–—|:])/i);
-  return m ? m[1] : "";
+  var m = (asunto || "").match(new RegExp("^\\s*" + PREFIJOS + "(\\d{4}-\\d{2,3}(?:[_-][A-Za-z]+)?|C9999)(?=\\s|$|[-–—|:])", "i"));
+  return m ? m[1].toUpperCase() === CONFIDENCIAL ? CONFIDENCIAL : m[1] : "";
+}
+
+// Si el asunto empieza por algo que parece un código mal escrito (599-111, 0559.111, 0559 111…),
+// devuelve las obras de la lista a las que podría referirse (solo si existen: nunca se inventa).
+function candidatasCorreccion(asunto) {
+  var m = (asunto || "").match(new RegExp("^\\s*" + PREFIJOS + "(\\d{1,4})\\s*[-._ ]\\s*(\\d{1,3})(?:_([A-Za-z]+))?(?=\\s|$|[-–—|:])", "i"));
+  if (!m) return [];
+  var cli = ("0000" + m[1]).slice(-4), num = m[2].length === 1 ? "0" + m[2] : m[2];
+  var base = cli + "-" + num;
+  var cand = obras.filter(function (o) {
+    var c = o.codigo.toUpperCase();
+    return m[3] ? c === base + "_" + m[3].toUpperCase() : c === base;
+  });
+  return cand.length ? cand : [];
 }
 
 // Franja superior: qué código lleva ahora el correo (útil al responder/reenviar) y enlaces a su carpeta.
 function mostrarActual(asunto) {
   var caja = document.getElementById("actual");
   var cod = codigoDelAsunto(asunto);
-  if (!cod) { caja.innerHTML = ""; return; }
+  if (!cod) {
+    var cand = candidatasCorreccion(asunto);
+    if (!cand.length) { caja.innerHTML = ""; return; }
+    caja.innerHTML = "El asunto lleva algo que parece un código mal escrito. ¿Quisiste decir…?" +
+      cand.map(function (o) {
+        return '<button class="corregir" data-corregir="' + esc(o.codigo) + '">' + esc(o.codigo) + " · " + esc(o.nombre) + "</button>";
+      }).join("");
+    return;
+  }
+  if (cod === CONFIDENCIAL) {
+    caja.innerHTML = "Este correo es <b>confidencial (C9999)</b>" + '<span class="nota">Se archiva según IT-001. Elige una obra abajo solo si quieres cambiarlo.</span>';
+    return;
+  }
   var o = porCodigo(cod);
   if (!o) {
     caja.innerHTML = "Este correo ya lleva <b>" + esc(cod) + '</b><span class="nota">Ese código no está en la lista de obras: compruébalo.</span>';
@@ -85,9 +115,15 @@ function refrescarActual() {
   } catch (e) { mostrarActual(""); }
 }
 
-function seccion(titulo, lista) {
-  return lista.length ? "<h2>" + titulo + "</h2>" + lista.map(filaHtml).join("") : "";
+function seccion(titulo, lista, conScroll) {
+  var filas = lista.map(filaHtml).join("");
+  return lista.length ? "<h2>" + titulo + "</h2>" + (conScroll ? '<div class="scroll">' + filas + "</div>" : filas) : "";
 }
+
+// Opción fija para correos confidenciales (IT-001): no es una obra, lleva el código C9999.
+var FILA_CONFIDENCIAL = '<div class="fila" data-codigo="' + CONFIDENCIAL + '">' +
+  '<span class="estrella-hueco"></span><span class="enlaces-hueco"></span>' +
+  '<span class="codigo">' + CONFIDENCIAL + '</span><span class="nombre">Confidencial (sin obra)</span></div>';
 
 function pintar() {
   var q = sinAcentos(document.getElementById("buscar").value).trim();
@@ -95,9 +131,8 @@ function pintar() {
   if (!q) {
     var f = favoritas.map(porCodigo).filter(Boolean);
     var r = recientes.map(porCodigo).filter(Boolean).filter(function (o) { return favoritas.indexOf(o.codigo) < 0; });
-    cont.innerHTML = seccion("Favoritas", f) + seccion("Últimas usadas", r) ||
-      '<p class="vacio">Escribe un código, un cliente o un lugar para buscar.</p>';
-    if (!f.length && !r.length) cont.innerHTML = '<p class="vacio">Escribe un código, un cliente o un lugar para buscar. Las que uses aparecerán aquí.</p>';
+    cont.innerHTML = seccion("Favoritas", f, true) + seccion("Últimas usadas", r) + "<h2>Otros</h2>" + FILA_CONFIDENCIAL;
+    if (!f.length && !r.length) cont.innerHTML = '<p class="vacio">Escribe un código, un cliente o un lugar para buscar. Las que uses aparecerán aquí.</p>' + "<h2>Otros</h2>" + FILA_CONFIDENCIAL;
     return;
   }
   var palabras = q.split(/\s+/);
@@ -112,18 +147,21 @@ function pintar() {
 function estado(t) { document.getElementById("estado").textContent = t || ""; }
 
 // Pone «código – texto» respetando prefijos RE:/RV:/FW: y sustituyendo un código anterior si lo hubiera.
-function ponerEnAsunto(codigo) {
+function ponerEnAsunto(codigo, malEscrito) {
   var item = Office.context.mailbox.item;
   item.subject.getAsync(function (r) {
     var actual = r.status === Office.AsyncResultStatus.Succeeded ? (r.value || "") : "";
-    var m = actual.match(/^\s*((?:(?:re|rv|res|fw|fwd|enc)\s*:\s*)*)(.*)$/i);
+    var m = actual.match(new RegExp("^\\s*(" + PREFIJOS + ")(.*)$", "i"));
     var prefijo = m ? m[1] : "";
     var resto = m ? m[2] : actual;
-    resto = resto.replace(/^\d{4}-\d{2,3}(?:[_-][A-Za-z]+)?\s*[-–—|:]?\s*/, "");   // quita el código anterior
+    // quita el código anterior (si se corrige uno mal escrito, también el formato suelto: 599-111, 0559.111…)
+    resto = resto.replace(malEscrito
+      ? /^(?:\d{1,4}\s*[-._ ]\s*\d{1,3}(?:_[A-Za-z]+)?|C9999)\s*[-–—|:]?\s*/i
+      : /^(?:\d{4}-\d{2,3}(?:[_-][A-Za-z]+)?|C9999)\s*[-–—|:]?\s*/i, "");
     var nuevo = prefijo + codigo + (resto ? " – " + resto : " – ");
     item.subject.setAsync(nuevo, function (res) {
       if (res.status === Office.AsyncResultStatus.Succeeded) {
-        recientes = [codigo].concat(recientes.filter(function (c) { return c !== codigo; })).slice(0, MAX_RECIENTES);
+        if (codigo !== CONFIDENCIAL) recientes = [codigo].concat(recientes.filter(function (c) { return c !== codigo; })).slice(0, MAX_RECIENTES);
         guardar();
         estado("Asunto: " + nuevo);
         mostrarActual(nuevo);
@@ -159,6 +197,10 @@ Office.onReady(function () {
     if (fav) { e.stopPropagation(); alternarFavorita(fav.getAttribute("data-fav")); return; }
     var fila = e.target.closest(".fila");
     if (fila) ponerEnAsunto(fila.getAttribute("data-codigo"));
+  });
+  document.getElementById("actual").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-corregir]");
+    if (b) ponerEnAsunto(b.getAttribute("data-corregir"), true);
   });
   document.getElementById("buscar").addEventListener("input", pintar);
 
