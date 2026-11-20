@@ -35,11 +35,16 @@ function porCodigo(c) { return obras.find(function (o) { return o.codigo === c; 
 // Solo se aceptan enlaces https (los datos vienen de fuera: nada de javascript: ni similares).
 function enlaceSeguro(u) { return /^https:\/\//i.test(u || "") ? u : ""; }
 
-function enlacesHtml(o) {
-  var sp = enlaceSeguro(o.url_sharepoint), fo = enlaceSeguro(o.url_forma);
-  var h = "";
-  if (sp) h += '<a href="' + esc(sp) + '" target="_blank" rel="noopener" title="Abrir la carpeta de la obra en SharePoint">SP</a>';
-  if (fo) h += '<a href="' + esc(fo) + '" target="_blank" rel="noopener" title="Abrir la obra en Autodesk Forma">Forma</a>';
+// SP = carpeta de la obra en SharePoint; AF = Autodesk Forma. Con huecos=true, si falta el enlace sale apagado
+// (así los códigos de todas las filas quedan alineados).
+function enlacesHtml(o, huecos) {
+  var sp = enlaceSeguro(o.url_sharepoint), af = enlaceSeguro(o.url_forma);
+  function boton(url, texto, titulo, sinEnlace) {
+    if (url) return '<a href="' + esc(url) + '" target="_blank" rel="noopener" title="' + titulo + '">' + texto + "</a>";
+    return huecos ? '<span class="off" title="' + sinEnlace + '">' + texto + "</span>" : "";
+  }
+  var h = boton(sp, "SP", "Abrir la carpeta de la obra en SharePoint", "Esta obra no tiene carpeta de SharePoint enlazada") +
+          boton(af, "AF", "Abrir la obra en Autodesk Forma", "Esta obra no está en Autodesk Forma");
   return h ? '<span class="enlaces">' + h + "</span>" : "";
 }
 
@@ -47,9 +52,9 @@ function filaHtml(o) {
   var fav = favoritas.indexOf(o.codigo) >= 0;
   return '<div class="fila" data-codigo="' + esc(o.codigo) + '">' +
     '<button class="estrella" title="Favorita" data-fav="' + esc(o.codigo) + '">' + (fav ? "★" : "☆") + "</button>" +
+    enlacesHtml(o, true) +
     '<span class="codigo">' + codigoHtml(o.codigo) + "</span>" +
-    '<span class="nombre" title="' + esc(o.nombre) + '">' + esc(o.nombre) + "</span>" +
-    enlacesHtml(o) + "</div>";
+    '<span class="nombre" title="' + esc(o.nombre) + '">' + esc(o.nombre) + "</span></div>";
 }
 
 // Código que ya lleva el asunto (tras RE:/FW:), p. ej. «0905-29_PCI»; "" si no lleva.
@@ -149,7 +154,7 @@ Office.onReady(function () {
   recientes = leerLista("recientes");
 
   document.getElementById("listas").addEventListener("click", function (e) {
-    if (e.target.closest("a")) return;   // enlaces SP / Forma: se abren, no cambian el asunto
+    if (e.target.closest(".enlaces")) return;   // botones SP / AF: se abren (o están apagados), no cambian el asunto
     var fav = e.target.closest("[data-fav]");
     if (fav) { e.stopPropagation(); alternarFavorita(fav.getAttribute("data-fav")); return; }
     var fila = e.target.closest(".fila");

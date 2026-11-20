@@ -19,3 +19,5 @@ h2 { margin: 10px 10px 2px; font-size: 11px; font-weight: 600; letter-spacing: .
 .enlaces { flex: none; display: flex; gap: 4px; }
 .enlaces a { display: inline-block; padding: 2px 6px; border: 1px solid var(--linea); border-radius: 3px; font-size: 11px; font-weight: 600; color: var(--azul); text-decoration: none; background: #fff; }
 .enlaces a:hover { background: var(--fondo); border-color: var(--cian); }
+.enlaces .off { display: inline-block; padding: 2px 6px; border: 1px dashed var(--linea); border-radius: 3px; font-size: 11px; font-weight: 600; color: #b8c2ca; cursor: default; }
+.enlaces a, .enlaces .off { min-width: 26px; text-align: center; }
