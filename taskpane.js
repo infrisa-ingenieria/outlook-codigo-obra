@@ -14,7 +14,7 @@ var ajustes = null;
 function sinAcentos(t) { return (t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
 function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
-// Códigos con anexo: «0905-29_PCI» se muestra como 0905-29 con «PCI» debajo, igual que la app.
+// Códigos con anexo: «9001-02_PCI» se muestra como 9001-02 con «PCI» debajo, igual que la app.
 function codigoHtml(c) {
   var i = c.indexOf("_");
   return i < 0 ? esc(c) : esc(c.slice(0, i)) + "<small>" + esc(c.slice(i + 1)) + "</small>";
@@ -57,7 +57,7 @@ function filaHtml(o) {
     '<span class="nombre" title="' + esc(o.nombre) + '">' + esc(o.nombre) + "</span></div>";
 }
 
-// Código que ya lleva el asunto (tras RE:/FW:), p. ej. «0905-29_PCI»; "" si no lleva.
+// Código que ya lleva el asunto (tras RE:/FW:), p. ej. «9001-02_PCI»; "" si no lleva.
 // Prefijos que se respetan: RE:/RV:/FW:… y etiquetas como [EXTERNO].
 var PREFIJOS = "(?:(?:\\[[^\\]]{1,30}\\]|(?:re|rv|res|fw|fwd|enc|tr)\\s*:)\\s*)*";
 var CONFIDENCIAL = "C9999";
@@ -67,12 +67,12 @@ function codigoDelAsunto(asunto) {
   return m ? m[1].toUpperCase() === CONFIDENCIAL ? CONFIDENCIAL : m[1] : "";
 }
 
-// Si el asunto empieza por algo que parece un código mal escrito (599-111, 0559.111, 0559 111…),
+// Si el asunto empieza por algo que parece un código mal escrito (901-111, 9001.111, 9001 111…),
 // devuelve las obras de la lista a las que podría referirse (solo si existen: nunca se inventa).
 function candidatasCorreccion(asunto) {
   var m = (asunto || "").match(new RegExp("^\\s*" + PREFIJOS + "(?:(\\d{1,4})\\s*[-._ ]\\s*(\\d{1,3})|(\\d{4})(\\d{2,3}))(?:_([A-Za-z]+))?(?=\\s|$|[-–—|:])", "i"));
   if (!m) return [];
-  var a = m[1] || m[3], b = m[2] || m[4];   // cliente y número de obra (con o sin separador: 559-107 · 0559107)
+  var a = m[1] || m[3], b = m[2] || m[4];   // cliente y número de obra (con o sin separador: 901-111 · 9001111)
   var cli = ("0000" + a).slice(-4), num = b.length === 1 ? "0" + b : b;
   var base = cli + "-" + num;
   var cand = obras.filter(function (o) {
@@ -155,7 +155,7 @@ function ponerEnAsunto(codigo, malEscrito) {
     var m = actual.match(new RegExp("^\\s*(" + PREFIJOS + ")(.*)$", "i"));
     var prefijo = m ? m[1] : "";
     var resto = m ? m[2] : actual;
-    // quita el código anterior (si se corrige uno mal escrito, también el formato suelto: 599-111, 0559.111…)
+    // quita el código anterior (si se corrige uno mal escrito, también el formato suelto: 901-111, 9001.111…)
     resto = resto.replace(malEscrito
       ? /^(?:\d{1,4}\s*[-._ ]\s*\d{1,3}(?:_[A-Za-z]+)?|\d{6,7}(?:_[A-Za-z]+)?|C9999)\s*[-–—|:]?\s*/i
       : /^(?:\d{4}-\d{2,3}(?:[_-][A-Za-z]+)?|C9999)\s*[-–—|:]?\s*/i, "");

@@ -7,15 +7,15 @@ var COMPROBAR_EXISTENCIA = false;
 var URL_OBRAS = "obras_demo.json";   // misma fuente que el panel (taskpane.js)
 
 // Código al principio del asunto, tras los prefijos de respuesta/reenvío y etiquetas tipo [EXTERNO]:
-// 0905-19 · 0905-29_PCI · 0157-123 · C9999 (confidencial)
+// 9002-11 · 9001-02_PCI · 9003-105 · C9999 (confidencial)
 var PREFIJOS = "(?:(?:\\[[^\\]]{1,30}\\]|(?:re|rv|res|fw|fwd|enc|tr)\\s*:)\\s*)*";
 var REGEX_CODIGO = new RegExp("^\\s*" + PREFIJOS + "(\\d{4}-\\d{2,3}(?:[_-][A-Za-z]+)?|C9999)(?=\\s|$|[-–—|:])", "i");
-// Algo que parece un código pero está mal escrito: 599-111 · 0559.111 · 0559 111 · 0559_111 · 0559107 (pegado)
+// Algo que parece un código pero está mal escrito: 901-111 · 9001.111 · 9001 111 · 9001_111 · 9001111 (pegado)
 var REGEX_PARECIDO = new RegExp("^\\s*" + PREFIJOS + "(?:\\d{1,4}\\s*[-._ ]\\s*\\d{1,3}|\\d{7})(?=\\s|$|[-–—|:_])", "i");
 
 var MENSAJE_FALTA = "Este correo no lleva código de obra en el asunto. " +
   "Pulsa «Elegir obra» para abrir la lista, o «Enviar de todos modos» si no corresponde a ninguna obra.";
-var MENSAJE_PARECIDO = "El asunto empieza por algo que parece un código de obra, pero no está bien escrito (el formato es 0559-111). " +
+var MENSAJE_PARECIDO = "El asunto empieza por algo que parece un código de obra, pero no está bien escrito (el formato es 9001-111). " +
   "Pulsa «Elegir obra» para corregirlo, o «Enviar de todos modos» si no es un código.";
 
 function mensajeInexistente(codigo) {
